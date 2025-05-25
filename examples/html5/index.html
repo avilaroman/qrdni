@@ -1,9 +1,73 @@
 <html>
 <head>
     <title>Html-Qrcode Demo</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+        #qr-reader { margin-bottom: 20px; }
+        #qr-reader-results { margin-bottom: 15px; font-weight: bold; }
+        .form-container { 
+            margin-top: 20px; 
+            padding: 20px; 
+            border: 1px solid #ccc; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            width: 450px; /* Adjusted width for better centering and appearance */
+        }
+        .form-container label { 
+            display: block; 
+            margin-bottom: 5px; 
+            color: #333;
+            font-weight: bold;
+        }
+        .form-container input[type="text"] { 
+            width: calc(100% - 18px); /* Adjusted width to account for padding and border */
+            padding: 8px; 
+            margin-bottom: 12px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            box-sizing: border-box; /* Ensures padding and border don't increase total width */
+        }
+        .form-container input[type="submit"] { 
+            padding: 10px 20px; 
+            background-color: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 16px;
+            display: block; /* Make button block to center it */
+            margin: 0 auto; /* Center the button */
+        }
+        .form-container input[type="submit"]:hover { 
+            background-color: #0056b3; 
+        }
+    </style>
 <body>
     <div id="qr-reader" style="width:500px"></div>
     <div id="qr-reader-results"></div>
+    <div class="form-container">
+        <form id="dni-form">
+            <label for="numero_tramite">Numero de Tramite:</label>
+            <input type="text" id="numero_tramite" name="numero_tramite">
+            <label for="apellido">Apellido:</label>
+            <input type="text" id="apellido" name="apellido">
+            <label for="nombre1">Nombre1:</label>
+            <input type="text" id="nombre1" name="nombre1">
+            <label for="nombre2">Nombre2 (opcional):</label>
+            <input type="text" id="nombre2" name="nombre2">
+            <label for="sexo">Sexo (M/F):</label>
+            <input type="text" id="sexo" name="sexo">
+            <label for="dni">DNI:</label>
+            <input type="text" id="dni" name="dni">
+            <label for="c">C:</label>
+            <input type="text" id="c" name="c">
+            <label for="fecha_nacimiento">Fecha de Nacimiento (DD/MM/AAAA):</label>
+            <input type="text" id="fecha_nacimiento" name="fecha_nacimiento">
+            <label for="fecha_emision">Fecha de Emision (DD/MM/AAAA):</label>
+            <input type="text" id="fecha_emision" name="fecha_emision">
+            <input type="submit" value="Submit">
+        </form>
+    </div>
 </body>
 <script src="/html5-qrcode.min.js"></script>
 <script>
@@ -27,6 +91,7 @@
                 lastResult = decodedText;
                 // Handle on success condition with the decoded message.
                 console.log(`Scan result ${decodedText}`, decodedResult);
+                parseAndPopulateForm(decodedText); // Call the new function to populate the form
             }
         }
 
@@ -34,6 +99,61 @@
             "qr-reader", { fps: 10, qrbox: 250 });
         html5QrcodeScanner.render(onScanSuccess);
     });
+
+    function parseAndPopulateForm(qrData) {
+        // Split the QR data string by "@"
+        const parts = qrData.split('@');
+
+        // Expected number of parts: 9 (if Nombre2 is present) or 8 (if Nombre2 is missing)
+        if (parts.length < 8 || parts.length > 9) {
+            console.error("Error: QR data string has an incorrect number of parts.", parts.length);
+            return;
+        }
+
+        let index = 0;
+        const numero_tramite = parts[index++];
+        const apellido = parts[index++];
+        const nombre1 = parts[index++];
+        
+        let nombre2 = "";
+        // Check if Nombre2 is present
+        if (parts.length === 9) {
+            nombre2 = parts[index++];
+        }
+        
+        const sexo = parts[index++];
+        const dni = parts[index++];
+        const c = parts[index++]; // 'C' field
+
+        // The last part contains dates separated by ":"
+        const datePart = parts[index++];
+        if (!datePart || !datePart.includes(':')) {
+            console.error("Error: Date part is missing or malformed.");
+            return;
+        }
+        const dates = datePart.split(':');
+        if (dates.length !== 2) {
+            console.error("Error: Incorrect number of dates found.");
+            return;
+        }
+        const fecha_nacimiento = dates[0];
+        const fecha_emision = dates[1];
+
+        // Populate the form fields
+        try {
+            document.getElementById('numero_tramite').value = numero_tramite;
+            document.getElementById('apellido').value = apellido;
+            document.getElementById('nombre1').value = nombre1;
+            document.getElementById('nombre2').value = nombre2; // Will be empty if not present
+            document.getElementById('sexo').value = sexo;
+            document.getElementById('dni').value = dni;
+            document.getElementById('c').value = c;
+            document.getElementById('fecha_nacimiento').value = fecha_nacimiento;
+            document.getElementById('fecha_emision').value = fecha_emision;
+        } catch (e) {
+            console.error("Error populating form fields:", e);
+        }
+    }
 </script>
 </head>
 </html>
